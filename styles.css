@@ -1,0 +1,166 @@
+/* --- Cấu Hình Chung Toàn Trang --- */
+body { 
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+  margin: 0; 
+  padding: 25px;
+  background-color: #f7fafc; 
+  color: #2d3748; 
+}
+
+.header { 
+  text-align: center; 
+  margin-bottom: 24px; 
+}
+
+.header h1 {
+  margin: 0 0 6px 0;
+  font-size: 26px;
+  letter-spacing: 0.5px;
+  color: #1a202c;
+}
+
+/* --- Bố Cục Flexbox --- */
+.container { 
+  display: flex; 
+  gap: 24px; 
+  max-width: 1400px; 
+  margin: 0 auto; 
+}
+
+.box { 
+  flex: 1; 
+  padding: 24px; 
+  border-radius: 12px; 
+  background: #fff; 
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
+}
+
+.box-map { 
+  flex: 1.6; /* Tăng nhẹ không gian hiển thị cho bản đồ trực quan hơn */
+}
+
+h2 { 
+  border-bottom: 2px solid #edf2f7; 
+  padding-bottom: 10px; 
+  margin-top: 0; 
+  margin-bottom: 18px;
+  font-size: 18px; 
+  color: #2d3748;
+}
+
+/* --- Thiết Kế Form Nhập Liệu (Được cập nhật thêm) --- */
+#step-order label {
+  display: block; 
+  font-size: 13px; 
+  font-weight: 600; 
+  margin-bottom: 6px;
+  color: #4a5568;
+}
+
+#step-order input[type="text"],
+#step-order select {
+  width: 100%; 
+  padding: 10px 12px; 
+  border: 1px solid #cbd5e0; 
+  border-radius: 8px;
+  font-size: 14px;
+  color: #2d3748;
+  background-color: #fff;
+  box-sizing: border-box; /* Đảm bảo padding không làm vỡ chiều rộng 100% */
+  transition: all 0.2s ease;
+  margin-bottom: 4px;
+}
+
+/* Hiệu ứng Focus khi người dùng click vào ô nhập liệu */
+#step-order input[type="text"]:focus,
+#step-order select:focus {
+  outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
+}
+
+/* --- Thiết Kế Các Nút Bấm (Buttons) --- */
+button { 
+  padding: 12px 16px; 
+  font-weight: bold; 
+  font-size: 14px;
+  cursor: pointer; 
+  color: white; 
+  border: none; 
+  border-radius: 8px; 
+  width: 100%; 
+  margin-top: 8px; 
+  transition: all 0.2s ease-in-out; 
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.btn-order { 
+  background: #2f855a; 
+} 
+.btn-order:hover { 
+  background: #22543d; 
+}
+
+.btn-delivery { 
+  background: #3182ce; 
+} 
+.btn-delivery:hover { 
+  background: #2b6cb0; 
+}
+
+.btn-success { 
+  background: #dd6b20; 
+} 
+.btn-success:hover { 
+  background: #c05621; 
+}
+
+.btn-mongo { 
+  background: #4a5568; 
+  margin-top: 16px; 
+} 
+.btn-mongo:hover { 
+  background: #2d3748; 
+}
+
+/* Trạng thái nút bị vô hiệu hóa */
+button:disabled { 
+  background: #e2e8f0 !important; 
+  color: #a0aec0 !important;
+  cursor: not-allowed; 
+  box-shadow: none;
+}
+
+/* --- Thành Phần Trực Quan (Logs & Map) --- */
+.status-log { 
+  background: #1a202c; 
+  color: #48bb78; 
+  padding: 14px; 
+  border-radius: 8px; 
+  height: 140px; 
+  overflow-y: auto; 
+  font-family: 'Courier New', Courier, monospace; 
+  margin-top: 14px; 
+  font-size: 12px; 
+  line-height: 1.6;
+  border: 1px solid #2d3748;
+}
+
+#map { 
+  width: 100%; 
+  height: 480px; /* Tăng nhẹ chiều cao bản đồ để cân bằng với box form */
+  border-radius: 8px; 
+  border: 1px solid #e2e8f0; 
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.badge { 
+  display: inline-block; 
+  padding: 4px 8px; 
+  border-radius: 6px; 
+  font-weight: bold; 
+  font-size: 12px; 
+  background: #feebc8; 
+  color: #c05621; 
+  margin-top: 4px;
+}

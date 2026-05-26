@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tracking Service - Full Architecture Test</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <div class="header">
+        <h1>TRACKING SERVICE</h1>
+        <span class="badge">Mã Đơn: DH-2026</span>
+    </div>
+
+    <div class="container">
+        <div class="box">
+            <h2>Trạng thái đơn hàng</h2>
+            
+            <div id="step-order">
+                <div style="margin-bottom: 12px;">
+                    <label>Tên khách hàng:</label>
+                    <input type="text" id="inputCustomerName" value="Quan Tri Duc">
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label>Chọn món ăn chính:</label>
+                    <select id="selectItem">
+                        <option value="Pizza Hải Sản" data-price="200000">Pizza Hải Sản - 200,000đ</option>
+                        <option value="Combo Gà Rán" data-price="150000">Combo Gà Rán - 150,000đ</option>
+                        <option value="Mì Ý Sốt Bò Bằm" data-price="120000">Mì Ý Sốt Bò Bằm - 120,000đ</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label>Nước uống đi kèm:</label>
+                    <select id="selectDrink">
+                        <option value="Coca Cola" data-price="20000">Coca Cola - 20,000đ</option>
+                        <option value="Trà Đào" data-price="30000">Trà Đào - 30,000đ</option>
+                        <option value="Không uống nước" data-price="0">Không lấy nước uống</option>
+                    </select>
+                </div>
+
+                <button id="btnPlaceOrder" class="btn-order" onclick="placeOrder()">Khách hàng: Đặt đơn ngay</button>
+            </div>
+
+            <div id="step-process" style="display: none;">
+                <button id="btnStartDelivery" class="btn-delivery" onclick="startDelivery()">Tài xế: Nhận đồ & Giao hàng</button>
+            </div>
+
+            <div id="step-shipping" style="display: none;">
+                <button id="btnCompleteOrder" class="btn-success" onclick="completeOrder()">Tài xế: Xác nhận Đã Giao Đến Nơi</button>
+            </div>
+            
+            <div id="driverLog" style="margin-top: 16px; font-size: 13px; font-weight: bold; color: #4a5568; text-align: center;">
+                Hệ thống: Vui lòng tiến hành đặt đơn.
+            </div>
+            
+            <div class="status-log" id="customerLog">Bảng ghi sự kiện mạng...</div>
+
+            <button id="btnFetchMongo" class="btn-mongo" onclick="fetchMongoData()" disabled>Trích xuất Lịch sử đơn hàng (MongoDB)</button>
+        </div>
+
+        <div class="box box-map">
+            <h2>Bản Đồ Theo Dõi Thời Gian Thực</h2>
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

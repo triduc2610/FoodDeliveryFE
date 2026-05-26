@@ -3,34 +3,41 @@ let baseLng = 105.85444;
 let map, driverMarker, polyline;
 let intervalId = null;
 let trackPath = []; 
+
 const orderId = "DH-" + Date.now();
-console.log("🆔 Mã đơn hàng test cho phiên làm việc này là:", orderId);
 
 let driverLat = baseLat;
 let driverLng = baseLng;
 
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
+const ORDER_SERVICE_URL = 'https://orderservice-3egs.onrender.com/api/orders'; 
+const TRACKING_SERVICE_URL = 'https://trackingservice-d6bf.onrender.com';
+// KHỞI TẠO BẢN ĐỒ VÀ KẾT NỐI SOCKET.IO
 function initMap() {
     map = L.map('map').setView([baseLat, baseLng], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap'
     }).addTo(map);
 
+    // Ghim vị trí Nhà Hàng cố định
     L.marker([baseLat, baseLng]).addTo(map).bindPopup('Nhà Hàng').openPopup();
     
+    // Khởi tạo nét vẽ lộ trình rỗng
     polyline = L.polyline([], {color: '#3182ce', weight: 4}).addTo(map);
 }
 initMap();
 
-const socket = io('http://localhost:5001', {
-    transports: ['websocket', 'polling']
-});
+// Khởi tạo kết nối Socket (Đã sửa lỗi gọi biến TRACKING_SERVICE_URL lên trước khi khai báo)
+const socket = io(TRACKING_SERVICE_URL, { transports: ['websocket', 'polling'] });
 
 socket.on('connect', () => {
     console.log("[Socket.io]: Kết nối thành công tới Tracking Service. ID:", socket.id);
+    // Khách hàng đăng ký gia nhập phòng (Room) riêng của đơn hàng
     socket.emit('join_order_track', { orderId: orderId, role: 'customer' });
 });
 
+// Lắng nghe dòng sự kiện thời gian thực đổ về từ server tracking
 socket.on('tracking_updated', (data) => {
     const logBox = document.getElementById('customerLog');
     
@@ -41,6 +48,7 @@ socket.on('tracking_updated', (data) => {
     logBox.innerHTML += `[${timeStr}] Nhận Event từ Server: [${data.status}]<br>`;
     logBox.scrollTop = logBox.scrollHeight;
 
+    // Xử lý dịch chuyển xe máy và vẽ đường khi tài xế đi ship
     if (data.status === "Đang giao hàng") {
         const currentPos = [data.latitude, data.longitude];
         
@@ -60,13 +68,16 @@ socket.on('tracking_updated', (data) => {
         map.panTo(currentPos);
     }
 
+    // Xử lý khi nhận trạng thái kết thúc hành trình
     if (data.status === "Đã hoàn thành" && driverMarker) {
-        driverMarker.bindPopup('🎉 Đã giao hàng thành công!').openPopup();
+        driverMarker.bindPopup('Đã giao hàng thành công!').openPopup();
     }
 });
 
+// LUỒNG NGHIỆP VỤ ĐIỀU KHIỂN HỆ THỐNG
+
+// BƯỚC 1: ĐẶT ĐƠN - THU THẬP FORM ĐỘNG VÀ GỌI SANG ORDER SERVICE
 function placeOrder() {
-    // 1. Lấy dữ liệu động từ giao diện Form nhập vào
     const customerName = document.getElementById('inputCustomerName').value;
     const foodSelect = document.getElementById('selectItem');
     const drinkSelect = document.getElementById('selectDrink');
@@ -74,31 +85,27 @@ function placeOrder() {
     const foodName = foodSelect.value;
     const drinkName = drinkSelect.value;
     
-    // Tính tổng tiền động dựa trên thuộc tính data-price của option được chọn
     const foodPrice = parseInt(foodSelect.options[foodSelect.selectedIndex].getAttribute('data-price'));
     const drinkPrice = parseInt(drinkSelect.options[drinkSelect.selectedIndex].getAttribute('data-price'));
     const totalPrice = foodPrice + drinkPrice;
 
     document.getElementById('btnPlaceOrder').disabled = true;
-    document.getElementById('driverLog').innerHTML = " Đang gửi đơn hàng tới Order Service...";
-
-    const ORDER_SERVICE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:5000/api/orders'
-    : 'https://orderservice-3egs.onrender.com';
+    document.getElementById('driverLog').innerHTML = "⏳ Đang gửi đơn hàng tới Order Service...";
 
     fetch(ORDER_SERVICE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            orderId: orderId, // Vẫn dùng DH-2026 cố định cho bài test websocket phòng (room)
+            orderId: orderId,
             customerName: customerName,
-            items: [foodName, drinkName].filter(item => item !== "Không uống nước"), // Lọc bỏ nếu ko chọn nước
+            items: [foodName, drinkName].filter(item => item !== "Không uống nước"),
             totalPrice: totalPrice
         })
     })
     .then(res => res.json())
     .then(data => {
         if (data.success || data.orderId) {
+            // ĐIỀU KHIỂN GIAO DIỆN: Ẩn màn hình bước 1, bật màn hình bước 2
             document.getElementById('step-order').style.display = 'none';
             document.getElementById('step-process').style.display = 'block';
             
@@ -111,11 +118,12 @@ function placeOrder() {
     })
     .catch(err => {
         console.error("Lỗi kết nối liên dịch vụ:", err);
-        alert("Không thể kết nối tới Order Service.");
+        alert("Không thể kết nối tới Order Service. Vui lòng kiểm tra lại môi trường.");
         document.getElementById('btnPlaceOrder').disabled = false;
     });
 }
 
+// BƯỚC 2: TÀI XẾ NHẬN ĐƠN & KHỞI HÀNH GIAO HÀNG
 function startDelivery() {
     document.getElementById('step-process').style.display = 'none';
     document.getElementById('step-shipping').style.display = 'block';
@@ -137,6 +145,7 @@ function startDelivery() {
     }, 3000); 
 }
 
+// BƯỚC 3: TÀI XẾ BẤM HOÀN THÀNH KHI ĐẾN ĐÍCH
 function completeOrder() {
     if (intervalId) { 
         clearInterval(intervalId); 
@@ -154,8 +163,9 @@ function completeOrder() {
     });
 }
 
+// BƯỚC TRA CỨU: TRÍCH XUẤT TOÀN BỘ LỊCH SỬ TỪ CLOUD
 function fetchMongoData() {
-    fetch(`http://localhost:5001/api/tracking/history/${orderId}`)
+    fetch(`${TRACKING_SERVICE_URL}/api/tracking/history/${orderId}`)
         .then(res => res.json())
         .then(data => {
             alert(`Dữ liệu Trích xuất Cơ sở dữ liệu trực tuyến\n\n` +

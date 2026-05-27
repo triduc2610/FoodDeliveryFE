@@ -4,7 +4,12 @@ let map, driverMarker, polyline;
 let intervalId = null;
 let trackPath = []; 
 
-const orderId = "DH-" + Date.now();
+let orderId = localStorage.getItem('current_test_order_id');
+if(!orderId){
+    orderId = "DH-" + Date.now();
+    localStorage.setItem('current_test_order_id', orderId);
+}
+console.log("Mã đơn hàng hiện tại là: ", orderId);
 
 let driverLat = baseLat;
 let driverLng = baseLng;
@@ -161,6 +166,8 @@ function completeOrder() {
         longitude: driverLng, 
         status: "Đã hoàn thành" 
     });
+
+    localStorage.removeItem('current_test_order_id')
 }
 
 // BƯỚC TRA CỨU: TRÍCH XUẤT TOÀN BỘ LỊCH SỬ TỪ CLOUD

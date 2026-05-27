@@ -1,4 +1,3 @@
-/* --- Cấu Hình Chung Toàn Trang --- */
 body { 
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
   margin: 0; 
@@ -19,7 +18,6 @@ body {
   color: #1a202c;
 }
 
-/* --- Bố Cục Flexbox --- */
 .container { 
   display: flex; 
   gap: 24px; 
@@ -36,7 +34,7 @@ body {
 }
 
 .box-map { 
-  flex: 1.6; /* Tăng nhẹ không gian hiển thị cho bản đồ trực quan hơn */
+  flex: 1.6;
 }
 
 h2 { 
@@ -48,7 +46,6 @@ h2 {
   color: #2d3748;
 }
 
-/* --- Thiết Kế Form Nhập Liệu (Được cập nhật thêm) --- */
 #step-order label {
   display: block; 
   font-size: 13px; 
@@ -66,12 +63,11 @@ h2 {
   font-size: 14px;
   color: #2d3748;
   background-color: #fff;
-  box-sizing: border-box; /* Đảm bảo padding không làm vỡ chiều rộng 100% */
+  box-sizing: border-box; 
   transition: all 0.2s ease;
   margin-bottom: 4px;
 }
 
-/* Hiệu ứng Focus khi người dùng click vào ô nhập liệu */
 #step-order input[type="text"]:focus,
 #step-order select:focus {
   outline: none;
@@ -79,7 +75,6 @@ h2 {
   box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
 }
 
-/* --- Thiết Kế Các Nút Bấm (Buttons) --- */
 button { 
   padding: 12px 16px; 
   font-weight: bold; 
@@ -123,7 +118,6 @@ button {
   background: #2d3748; 
 }
 
-/* Trạng thái nút bị vô hiệu hóa */
 button:disabled { 
   background: #e2e8f0 !important; 
   color: #a0aec0 !important;
@@ -131,7 +125,6 @@ button:disabled {
   box-shadow: none;
 }
 
-/* --- Thành Phần Trực Quan (Logs & Map) --- */
 .status-log { 
   background: #1a202c; 
   color: #48bb78; 
@@ -148,7 +141,7 @@ button:disabled {
 
 #map { 
   width: 100%; 
-  height: 480px; /* Tăng nhẹ chiều cao bản đồ để cân bằng với box form */
+  height: 480px;
   border-radius: 8px; 
   border: 1px solid #e2e8f0; 
   box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);

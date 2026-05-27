@@ -4,22 +4,21 @@ let map, driverMarker, polyline;
 let intervalId = null;
 let trackPath = []; 
 
-// 1. NGHIỆP VỤ BẢO TOÀN TRẠNG THÁI VÀ KHÔI PHỤC GIAO DIỆN (LOCALSTORAGE)
+//LocalStorage for id
 let orderId = localStorage.getItem('current_test_order_id');
 if (!orderId) {
     orderId = "DH-" + Date.now();
     localStorage.setItem('current_test_order_id', orderId);
 } else {
-    // Đọc trạng thái đã lưu để khôi phục đúng phân đoạn giao diện khi F5
+    //check saved id
     const savedStatus = localStorage.getItem('current_test_order_status') || "Dang che bien";
     
     setTimeout(() => {
-        // Luôn mở khóa nút xem lịch sử MongoDB khi có đơn chạy dở
+        //Enable Fetch btn if orderId exist
         const btnFetchMongo = document.getElementById('btnFetchMongo');
         if (btnFetchMongo) btnFetchMongo.disabled = false;
 
         if (savedStatus === "Dang che bien") {
-            // Khôi phục về Bước 2: Nhà hàng đang chuẩn bị
             document.getElementById('step-order').style.display = 'none';
             document.getElementById('step-process').style.display = 'block';
             document.getElementById('driverLog').innerHTML = "<span style='color: #dd6b20;'>He thong: Dang khoi phuc trang thai don hang dang che bien</span>";
@@ -30,8 +29,6 @@ if (!orderId) {
             document.getElementById('step-process').style.display = 'none';
             document.getElementById('step-shipping').style.display = 'block';
             document.getElementById('driverLog').innerHTML = "<span style='color: #3182ce;'>He thong: Dang ket noi lai va tiep tuc hanh trinh giao hang</span>";
-            
-            // Kích hoạt lại vòng lặp định vị ngầm để xe máy tiếp tục chạy tự động từ vị trí cũ
             resumeDeliveryLoop();
         }
         console.log("[UI State]: Da tu dong khoi phuc giao dien ve trang thai:", savedStatus);
@@ -47,17 +44,15 @@ const isLocal = window.location.hostname === 'localhost' || window.location.host
 const ORDER_SERVICE_URL = 'https://orderservice-3egs.onrender.com/api/orders'; 
 const TRACKING_SERVICE_URL = 'https://trackingservice-d6bf.onrender.com';
 
-// 2. KHỞI TẠO BẢN ĐỒ VÀ KẾT NỐI SOCKET.IO
+//Map & socket.io
 function initMap() {
     map = L.map('map').setView([baseLat, baseLng], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // Ghim vị trí Nhà Hàng cố định
+    //Res location
     L.marker([baseLat, baseLng]).addTo(map).bindPopup('Nha Hang').openPopup();
-    
-    // Khởi tạo nét vẽ lộ trình rỗng
     polyline = L.polyline([], {color: '#3182ce', weight: 4}).addTo(map);
 }
 initMap();
@@ -69,7 +64,7 @@ socket.on('connect', () => {
     socket.emit('join_order_track', { orderId: orderId, role: 'customer' });
 });
 
-// Lắng nghe dòng sự kiện thời gian thực đổ về từ server tracking
+//take tracking data
 socket.on('tracking_updated', (data) => {
     const logBox = document.getElementById('customerLog');
     
@@ -80,7 +75,6 @@ socket.on('tracking_updated', (data) => {
     logBox.innerHTML += `[${timeStr}] Nhan Event tu Server: [${data.status}]<br>`;
     logBox.scrollTop = logBox.scrollHeight;
 
-    // Xử lý dịch chuyển xe máy và vẽ đường khi tài xế đi ship
     if (data.status === "Đang giao hàng") {
         const currentPos = [data.latitude, data.longitude];
         
@@ -99,16 +93,11 @@ socket.on('tracking_updated', (data) => {
         polyline.setLatLngs(trackPath);
         map.panTo(currentPos);
     }
-
-    // Xử lý khi nhận trạng thái kết thúc hành trình
     if (data.status === "Đã hoàn thành" && driverMarker) {
         driverMarker.bindPopup('Da giao hang thanh cong!').openPopup();
     }
 });
 
-// 3. LUỒNG NGHIỆP VỤ ĐIỀU KHIỂN HỆ THỐNG
-
-// BƯỚC 1: ĐẶT ĐƠN
 function placeOrder() {
     const customerName = document.getElementById('inputCustomerName').value;
     const foodSelect = document.getElementById('selectItem');
@@ -142,7 +131,6 @@ function placeOrder() {
             
             document.getElementById('driverLog').innerHTML = `<span style='color: #dd6b20;'>He thong: Mon an (${foodName}) dang duoc chuan bi</span>`;
             
-            // LƯU TRẠNG THÁI: Đã đặt đơn, đang chế biến
             localStorage.setItem('current_test_order_status', "Dang che bien");
             console.log("[Order Service Response]:", data.message);
         } else {
@@ -157,7 +145,6 @@ function placeOrder() {
     });
 }
 
-// BƯỚC 2: TÀI XẾ NHẬN ĐƠN & KHỞI HÀNH GIAO HÀNG
 function startDelivery() {
     document.getElementById('step-process').style.display = 'none';
     document.getElementById('step-shipping').style.display = 'block';
@@ -166,7 +153,6 @@ function startDelivery() {
     driverLat = baseLat;
     driverLng = baseLng;
 
-    // LƯU TRẠNG THÁI: Đang đi giao hàng trực tuyến
     localStorage.setItem('current_test_order_status', "Dang giao hang");
 
     intervalId = setInterval(() => {
@@ -182,9 +168,7 @@ function startDelivery() {
     }, 3000); 
 }
 
-// BƯỚC 2.5: ĐOẠN KHẮC PHỤC - HÀM TỰ ĐỘNG CHẠY TIẾP LUỒNG GPS KHI F5
 function resumeDeliveryLoop() {
-    // Giả lập xe đi tiếp tục từ tọa độ cơ sở để tránh bị kẹt biến undefined
     driverLat = baseLat - 0.0005; 
     driverLng = baseLng + 0.0007;
 
@@ -201,7 +185,6 @@ function resumeDeliveryLoop() {
     }, 3000);
 }
 
-// BƯỚC 3: TÀI XẾ BẤM HOÀN THÀNH KHI ĐẾN ĐÍCH
 function completeOrder() {
     if (intervalId) { 
         clearInterval(intervalId); 
@@ -220,13 +203,10 @@ function completeOrder() {
         longitude: driverLng, 
         status: "Đã hoàn thành" 
     });
-
-    // XÓA SẠCH DẤU VẾT ĐƠN CŨ ĐỂ F5 LẦN SAU SẼ TỰ ĐỘNG MỞ ĐƠN MỚI
     localStorage.removeItem('current_test_order_id');
     localStorage.removeItem('current_test_order_status');
 }
 
-// BƯỚC TRA CỨU: TRÍCH XUẤT TOÀN BỘ LỊCH SỬ TỪ CLOUD
 function fetchMongoData() {
     fetch(`${TRACKING_SERVICE_URL}/api/tracking/history/${orderId}`)
         .then(res => res.json())

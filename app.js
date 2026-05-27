@@ -4,12 +4,23 @@ let map, driverMarker, polyline;
 let intervalId = null;
 let trackPath = []; 
 
+// 1. NGHIỆP VỤ BẢO TOÀN TRẠNG THÁI (LOCALSTORAGE)
 let orderId = localStorage.getItem('current_test_order_id');
-if(!orderId){
+if (!orderId) {
     orderId = "DH-" + Date.now();
     localStorage.setItem('current_test_order_id', orderId);
+} else {
+    // Tự động kiểm tra UI khi F5 giữa đường
+    // Chờ DOM tải xong trong 150ms để kích hoạt mở khóa nút tra cứu MongoDB
+    setTimeout(() => {
+        const btnFetchMongo = document.getElementById('btnFetchMongo');
+        if (btnFetchMongo) {
+            btnFetchMongo.disabled = false;
+            console.log("[UI State]: Phat hien don hang chay do. Da tu dong mo khoa nut xem lich su cho don:", orderId);
+        }
+    }, 150);
 }
-console.log("Mã đơn hàng hiện tại là: ", orderId);
+console.log("Ma don hang hien tai la: ", orderId);
 
 let driverLat = baseLat;
 let driverLng = baseLng;
@@ -18,7 +29,8 @@ const isLocal = window.location.hostname === 'localhost' || window.location.host
 
 const ORDER_SERVICE_URL = 'https://orderservice-3egs.onrender.com/api/orders'; 
 const TRACKING_SERVICE_URL = 'https://trackingservice-d6bf.onrender.com';
-// KHỞI TẠO BẢN ĐỒ VÀ KẾT NỐI SOCKET.IO
+
+// 2. KHỔI TẠO BẢN ĐỒ VÀ KẾT NỐI SOCKET.IO
 function initMap() {
     map = L.map('map').setView([baseLat, baseLng], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -26,19 +38,17 @@ function initMap() {
     }).addTo(map);
 
     // Ghim vị trí Nhà Hàng cố định
-    L.marker([baseLat, baseLng]).addTo(map).bindPopup('Nhà Hàng').openPopup();
+    L.marker([baseLat, baseLng]).addTo(map).bindPopup('Nha Hang').openPopup();
     
     // Khởi tạo nét vẽ lộ trình rỗng
     polyline = L.polyline([], {color: '#3182ce', weight: 4}).addTo(map);
 }
 initMap();
 
-// Khởi tạo kết nối Socket (Đã sửa lỗi gọi biến TRACKING_SERVICE_URL lên trước khi khai báo)
 const socket = io(TRACKING_SERVICE_URL, { transports: ['websocket', 'polling'] });
 
 socket.on('connect', () => {
-    console.log("[Socket.io]: Kết nối thành công tới Tracking Service. ID:", socket.id);
-    // Khách hàng đăng ký gia nhập phòng (Room) riêng của đơn hàng
+    console.log("[Socket.io]: Ket noi thanh cong toi Tracking Service. ID:", socket.id);
     socket.emit('join_order_track', { orderId: orderId, role: 'customer' });
 });
 
@@ -50,7 +60,7 @@ socket.on('tracking_updated', (data) => {
         ? data.timestamp.split('T')[1].slice(0,8) 
         : new Date().toLocaleTimeString();
     
-    logBox.innerHTML += `[${timeStr}] Nhận Event từ Server: [${data.status}]<br>`;
+    logBox.innerHTML += `[${timeStr}] Nhan Event tu Server: [${data.status}]<br>`;
     logBox.scrollTop = logBox.scrollHeight;
 
     // Xử lý dịch chuyển xe máy và vẽ đường khi tài xế đi ship
@@ -63,7 +73,7 @@ socket.on('tracking_updated', (data) => {
                     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
                     iconSize: [25, 41], iconAnchor: [12, 41]
                 })
-            }).addTo(map).bindPopup('🛵 Tài xế đang di chuyển').openPopup();
+            }).addTo(map).bindPopup('Tai xe dang di chuyen').openPopup();
         } else {
             driverMarker.setLatLng(currentPos);
         }
@@ -75,13 +85,13 @@ socket.on('tracking_updated', (data) => {
 
     // Xử lý khi nhận trạng thái kết thúc hành trình
     if (data.status === "Đã hoàn thành" && driverMarker) {
-        driverMarker.bindPopup('Đã giao hàng thành công!').openPopup();
+        driverMarker.bindPopup('Da giao hang thanh cong!').openPopup();
     }
 });
 
-// LUỒNG NGHIỆP VỤ ĐIỀU KHIỂN HỆ THỐNG
+// 3. LUỒNG NGHIỆP VỤ ĐIỀU KHIỂN HỆ THỐNG
 
-// BƯỚC 1: ĐẶT ĐƠN - THU THẬP FORM ĐỘNG VÀ GỌI SANG ORDER SERVICE
+// BƯỚC 1: ĐẶT ĐƠN
 function placeOrder() {
     const customerName = document.getElementById('inputCustomerName').value;
     const foodSelect = document.getElementById('selectItem');
@@ -95,7 +105,7 @@ function placeOrder() {
     const totalPrice = foodPrice + drinkPrice;
 
     document.getElementById('btnPlaceOrder').disabled = true;
-    document.getElementById('driverLog').innerHTML = "⏳ Đang gửi đơn hàng tới Order Service...";
+    document.getElementById('driverLog').innerHTML = "Dang gui don hang toi Order Service...";
 
     fetch(ORDER_SERVICE_URL, {
         method: 'POST',
@@ -110,20 +120,19 @@ function placeOrder() {
     .then(res => res.json())
     .then(data => {
         if (data.success || data.orderId) {
-            // ĐIỀU KHIỂN GIAO DIỆN: Ẩn màn hình bước 1, bật màn hình bước 2
             document.getElementById('step-order').style.display = 'none';
             document.getElementById('step-process').style.display = 'block';
             
-            document.getElementById('driverLog').innerHTML = `<span style='color: #dd6b20;'>Hệ thống: Món ăn (${foodName}) đang được chuẩn bị</span>`;
-            console.log("📦 [Order Service Response]:", data.message);
+            document.getElementById('driverLog').innerHTML = `<span style='color: #dd6b20;'>He thong: Mon an (${foodName}) dang duoc chuan bi</span>`;
+            console.log("[Order Service Response]:", data.message);
         } else {
-            alert("Order Service từ chối xử lý: " + data.error);
+            alert("Order Service tu choi xu ly: " + data.error);
             document.getElementById('btnPlaceOrder').disabled = false;
         }
     })
     .catch(err => {
-        console.error("Lỗi kết nối liên dịch vụ:", err);
-        alert("Không thể kết nối tới Order Service. Vui lòng kiểm tra lại môi trường.");
+        console.error("Loi ket noi lien dich vu:", err);
+        alert("Khong the ket noi toi Order Service. Vui long kiem tra lai moi truong.");
         document.getElementById('btnPlaceOrder').disabled = false;
     });
 }
@@ -132,7 +141,7 @@ function placeOrder() {
 function startDelivery() {
     document.getElementById('step-process').style.display = 'none';
     document.getElementById('step-shipping').style.display = 'block';
-    document.getElementById('driverLog').innerHTML = "<span style='color: #3182ce;'>Tài xế đang giao hàng trên đường</span>";
+    document.getElementById('driverLog').innerHTML = "<span style='color: #3182ce;'>Tai xe dang giao hang tren duong</span>";
 
     driverLat = baseLat;
     driverLng = baseLng;
@@ -156,9 +165,12 @@ function completeOrder() {
         clearInterval(intervalId); 
         intervalId = null; 
     }
-    document.getElementById('btnCompleteOrder').disabled = true;
+    
+    const completeBtn = document.getElementById('btnCompleteOrder') || document.getElementById('completeOrder');
+    if (completeBtn) completeBtn.disabled = true;
+
     document.getElementById('btnFetchMongo').disabled = false; 
-    document.getElementById('driverLog').innerHTML = "<span style='color: #2f855a;'>Đơn hàng đã giao thành công!</span>";
+    document.getElementById('driverLog').innerHTML = "<span style='color: #2f855a;'>Don hang da giao thanh cong!</span>";
 
     socket.emit('update_location', { 
         orderId: orderId, 
@@ -167,7 +179,7 @@ function completeOrder() {
         status: "Đã hoàn thành" 
     });
 
-    localStorage.removeItem('current_test_order_id')
+    localStorage.removeItem('current_test_order_id');
 }
 
 // BƯỚC TRA CỨU: TRÍCH XUẤT TOÀN BỘ LỊCH SỬ TỪ CLOUD
@@ -175,11 +187,11 @@ function fetchMongoData() {
     fetch(`${TRACKING_SERVICE_URL}/api/tracking/history/${orderId}`)
         .then(res => res.json())
         .then(data => {
-            alert(`Dữ liệu Trích xuất Cơ sở dữ liệu trực tuyến\n\n` +
-                  `• Mã đơn hàng: ${data.orderId}\n` +
-                  `• Trạng thái cuối (RAM Upstash Redis): ${data.redisLatestLocation ? data.redisLatestLocation.status : "N/A"}\n` +
-                  `• Tổng số điểm định vị (MongoDB Atlas): ${data.mongoTotalPointsSaved} điểm tọa độ.`);
-            console.log("Chi tiết mảng vệt lộ trình lưu tại MongoDB Atlas:", data.mongoRouteHistory);
+            alert(`Du lieu Trich xuat Co so du lieu truc tuyen\n\n` +
+                  `• Ma don hang: ${data.orderId}\n` +
+                  `• Trang thai cuoi (RAM Upstash Redis): ${data.redisLatestLocation ? data.redisLatestLocation.status : "N/A"}\n` +
+                  `• Tong so diem dinh vi (MongoDB Atlas): ${data.mongoTotalPointsSaved} diem toa do.`);
+            console.log("Chi tiet mang vet lo trinh luu tai MongoDB Atlas:", data.mongoRouteHistory);
         })
-        .catch(err => alert("Lỗi khi kết nối API cơ sở dữ liệu lịch sử."));
+        .catch(err => alert("Loi khi ket noi API co so du lieu lich su."));
 }
